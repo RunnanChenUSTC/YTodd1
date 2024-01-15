@@ -21,7 +21,7 @@
     ],
     "paths": {
       "@/*": ["./*"],
-      "@next/third-parties/google": [ "./node_modules/@next/third-parties/dist/google" ]
+      "@next/third-parties": "^14.0.4"
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "app/calcTextareaHeight.ts"],
