@@ -693,7 +693,8 @@ function _Chat() {
       }
     }
   };
-  const userId = accessStore.accessCode;
+  const accessStore1 = useAccessStore();
+  const userId = accessStore1.accessCode;
   const doSubmit = (userInput: string) => {
     if (userInput.trim() === "") return;
     const matchCommand = chatCommands.match(userInput);
