@@ -714,7 +714,7 @@ function _Chat() {
     window.gtag('event', 'send_message', {
       'event_category': 'Chat',
       'event_label': userId,
-      'value': userInput
+      'user_input_text': userInput
     });
   };
 
