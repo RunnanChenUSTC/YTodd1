@@ -469,8 +469,8 @@ export function ChatActions(props: {
       {props.hitBottom && (
         <ChatAction
           onClick={props.showPromptModal}
-          text={Locale.Chat.InputActions.Settings}
-          icon={<SettingsIcon />}
+          text={Locale.Chat.InputActions.ToBottom}
+          icon={<BottomIcon />}
         />
       )}
 
