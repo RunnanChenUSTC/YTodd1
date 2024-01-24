@@ -644,10 +644,22 @@ function _Chat() {
     if (!isMobileScreen) inputRef.current?.focus();
     setAutoScroll(true); 
     const timestamp = new Date();
+    setLastUserInput({ userInput, timestamp: new Date() });
     const record = `event_label: ${userId}, user_input_text: ${userInput}, timestamp: ${timestamp}`;
     window.gtag('event', 'send_message', { 'record': record });
   };
+  const findLatestAssistantResponse = () => {
+  if (!lastUserInput) return;
 
+  const response = messages.find((message) => {
+    return message.role === 'assistant' && new Date(message.timestamp) > new Date(lastUserInput.timestamp);
+  });
+
+  if (response) {
+    // 发送Google Analytics事件
+    window.gtag('event', 'botresponse', { 'content': response.content });
+  }
+};
   const onPromptSelect = (prompt: RenderPompt) => {
     setTimeout(() => {
       setPromptHints([]);
@@ -689,15 +701,16 @@ function _Chat() {
           }
         }
       });
-
+      
       // auto sync mask config from global config
       if (session.mask.syncGlobalConfig) {
         console.log("[Mask] syncing from global, name = ", session.mask.name);
         session.mask.modelConfig = { ...config.modelConfig };
       }
+      findLatestAssistantResponse();
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [messages, chatStore]);
 
   // check if should send message
   const onInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
