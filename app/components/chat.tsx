@@ -583,6 +583,10 @@ function _Chat() {
     }
     setIsLoading(true);
     chatStore.onUserInput(userInput).then(() => setIsLoading(false));
+    const session = chatStore.currentSession();
+    const lastMessage = session.messages[session.messages.length - 1];
+    if (lastMessage && lastMessage.role === 'assistant') {
+      const robotResponse = lastMessage.content;
     localStorage.setItem(LAST_INPUT_KEY, userInput);
     setUserInput("");
     setPromptHints([]);
@@ -591,6 +595,7 @@ function _Chat() {
     const timestamp = new Date();
     const record = `event_label: ${userId}, user_input_text: ${userInput}, timestamp: ${timestamp}`;
     window.gtag('event', 'send_message', { 'record': record });
+    window.gtag('event', 'bot_message', { 'robotResponse': robotResponse });
   };
 
   const onPromptSelect = (prompt: RenderPompt) => {
