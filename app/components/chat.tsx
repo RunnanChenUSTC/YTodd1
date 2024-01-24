@@ -644,12 +644,8 @@ function _Chat() {
     if (!isMobileScreen) inputRef.current?.focus();
     setAutoScroll(true); 
     const timestamp = new Date();
-    const record = {
-    event_label: userId,
-    user_input_text: userInput,
-    timestamp: timestamp.toISOString()
-  };
-    window.gtag('event', 'send_message', record);
+    const record = `event_label: ${userId}, user_input_text: ${userInput}, timestamp: ${timestamp}`;
+    window.gtag('event', 'send_message', { 'record': record });
   };
 
   const onPromptSelect = (prompt: RenderPompt) => {
