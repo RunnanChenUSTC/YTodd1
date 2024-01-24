@@ -594,7 +594,7 @@ function _Chat() {
         const robotResponse = lastMessage.content; // 提取机器人的回答
   
         // 发送机器人的回答到 Google Analytics
-        gtag('event', 'robot response', {
+        window.gtag('event', 'robot response', {
           'event_category': 'Chat',
           'event_label': 'Robot Response',
           'value': robotResponse
