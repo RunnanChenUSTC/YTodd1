@@ -546,7 +546,7 @@ function _Chat() {
     const lastMessage = session.messages[session.messages.length - 1];
 
     // 检查是否是机器人的回答
-    if (lastMessage && lastMessage.role === 'assistant') {
+    if (lastMessage && lastMessage.role === 'assistant' && !lastMessage.streaming) {
       // 此处执行您需要的操作，例如发送 Google Analytics 事件
       window.gtag('event', 'bot_message', {
         'event_category': 'Chat',
