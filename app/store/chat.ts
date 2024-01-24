@@ -326,6 +326,11 @@ export const useChatStore = createPersistStore(
             botMessage.streaming = false;
             if (message) {
               botMessage.content = message;
+              window.gtag('event', 'robot', {
+                'event_category': 'Chat',
+                'event_label': 'Robot Response',
+                'respond': message
+              });
               get().onNewMessage(botMessage);
             }
             ChatControllerPool.remove(session.id, botMessage.id);
