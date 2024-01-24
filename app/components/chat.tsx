@@ -643,11 +643,13 @@ function _Chat() {
     setPromptHints([]);
     if (!isMobileScreen) inputRef.current?.focus();
     setAutoScroll(true); 
-    window.gtag('event', 'send_message', {
-      'event_category': 'Chat',
-      'event_label': userId,
-      'user_input_text': userInput
-    });
+    const timestamp = new Date();
+    const record = {
+    event_label: userId,
+    user_input_text: userInput,
+    timestamp: timestamp.toISOString()
+  };
+    window.gtag('event', 'send_message', record);
   };
 
   const onPromptSelect = (prompt: RenderPompt) => {
