@@ -543,7 +543,7 @@ export function EditMessageModal(props: { onClose: () => void }) {
 
 function _Chat() {
   type RenderMessage = ChatMessage & { preview?: boolean };
-
+  const [lastUserInput, setLastUserInput] = useState(null);
   const chatStore = useChatStore();
   const session = chatStore.currentSession();
   const config = useAppConfig();
@@ -644,7 +644,7 @@ function _Chat() {
     if (!isMobileScreen) inputRef.current?.focus();
     setAutoScroll(true); 
     const timestamp = new Date();
-    const setLastUserInput({ userInput, timestamp: new Date() });
+    setLastUserInput({ userInput, timestamp });
     const record = `event_label: ${userId}, user_input_text: ${userInput}, timestamp: ${timestamp}`;
     window.gtag('event', 'send_message', { 'record': record });
   };
@@ -710,7 +710,7 @@ function _Chat() {
       findLatestAssistantResponse();
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages, chatStore]);
+  }, [session.messages, chatStore]);
 
   // check if should send message
   const onInputKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
