@@ -591,7 +591,7 @@ function _Chat() {
       // 获取会话中的最后一条消息，假设它是机器人的回答
       const lastMessage = session.messages[session.messages.length - 1];
       if (lastMessage) {
-        const robotResponse = lastMessage.content; // 提取机器人的回答
+        const robotResponse = lastMessage; // 提取机器人的回答
   
         // 发送机器人的回答到 Google Analytics
         window.gtag('event', 'robot response', {
