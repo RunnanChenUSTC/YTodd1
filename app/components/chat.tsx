@@ -541,20 +541,22 @@ function _Chat() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(measure, [userInput]);
   // chat commands shortcuts
+  const [hasSentEvent, setHasSentEvent] = useState(false);
   useEffect(() => {
     // 获取最新的消息
     const lastMessage = session.messages[session.messages.length - 1];
 
     // 检查是否是机器人的回答
-    if (lastMessage && lastMessage.role === 'assistant' && !lastMessage.streaming) {
+   if (lastMessage && lastMessage.role === 'assistant' && !lastMessage.streaming && !hasSentEvent) {
       // 此处执行您需要的操作，例如发送 Google Analytics 事件
       window.gtag('event', 'bot_message', {
         'event_category': 'Chat',
         'event_label': 'Bot Response',
         'value': lastMessage.content
       });
+     setHasSentEvent(true)
     }
-  }, [session.messages]);
+  }, [session.messages,hasSentEvent]);
   const chatCommands = useChatCommand({
     new: () => chatStore.newSession(),
     newm: () => navigate(Path.NewChat),
@@ -625,6 +627,7 @@ function _Chat() {
   const timestamp = new Date();
   const record = `event_label: ${userId}, user_input_text: ${userInput}, timestamp: ${timestamp}`;
   window.gtag('event', 'send_message', { 'record': record });
+  setHasSentEvent(false);
 };
 
 
