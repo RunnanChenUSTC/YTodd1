@@ -549,10 +549,17 @@ function _Chat() {
     // 检查是否是机器人的回答
    if (lastMessage && lastMessage.role === 'assistant' && !lastMessage.streaming && !hasSentEvent) {
       // 此处执行您需要的操作，例如发送 Google Analytics 事件
+      const timestamp = new Date().getTime();
+     // 查找最近的用户消息
+      const userMessages = session.messages.filter(message => message.role === 'user');
+      const lastUserMessage = userMessages[userMessages.length - 1];
+      const userQuestion = lastUserMessage ? lastUserMessage.content : 'Unknown';
       window.gtag('event', 'bot_message', {
         'event_category': 'Chat',
         'event_label': 'Bot Response',
-        'value': lastMessage.content
+        'user_question': userQuestion,
+        'bot_response': lastMessage.content,
+        'timestamp': timestamp
       });
      setHasSentEvent(true)
     }
