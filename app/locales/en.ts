@@ -364,8 +364,8 @@ const en: LocaleType = {
     },
   },
   Store: {
-    DefaultTopic: "Exploratory Talk",
-    BotHello: "Tianyi, Please consider how to organize the prompt, you can refer to beta.smartpal.chat to get the full functions.",
+    DefaultTopic: "New Conversation",
+    BotHello: "Hello! How can I assist you today!",
     Error: "Something went wrong, please try again later.",
     Prompt: {
       History: (content: string) =>
