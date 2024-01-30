@@ -636,7 +636,7 @@ function _Chat() {
   const record = `event_label: ${userId}, user_input_text: ${userInput}, timestamp: ${timestamp}`;
   const userrec = `event_label: ${userId}`;
   window.gtag('event', 'send_message', { 'record': record });
-  window.gtag('event', 'user_access', { 'userrec': userrec });
+  window.gtag('event', 'user_access', {'event_label': 'UserAccess', 'userrec': userrec });
   setHasSentEvent(false);
 };
 
