@@ -645,11 +645,29 @@ function _Chat() {
   setPromptHints([]);
   if (!isMobileScreen) inputRef.current?.focus();
   setAutoScroll(true);
-
+  function splitText1(text: string, partLength: number): string[] {
+          let parts: string[] = [];
+          let index = 0;
+      
+          // 循环直到文本结束
+          while(index < text.length) {
+              parts.push(text.substring(index, Math.min(index + partLength, text.length)));
+              index += partLength;
+          }
+        // 确保结果数组有四个元素，不足部分填充为空字符串
+          while(parts.length < 4) {
+              parts.push("");
+          }
+      
+          return parts.slice(0, 4); // 只返回前四个部分
+  }
   const timestamp = new Date();
-  const record = `event_label: ${userId}, user_input_text: ${userInput}, timestamp: ${timestamp}`;
+  const record = `${userInput}`;
+  const user_name = `${userId}`;
+  const time_shot = `${timestamp}`;
   const userrec = `${userAccess}`;
-  window.gtag('event', 'send_message', { 'record': record });
+  const [rec1, rec2, rec3, rec4] = splitText(record, 75);
+  window.gtag('event', 'send_message', { 'time_shot':time_shot, 'user_name':user_name,'rec1':rec1,'rec2':rec2,'rec3':rec3,'rec4':rec4});
   window.gtag('event', 'user_access', {  'userrec': userrec });
   setHasSentEvent(false);
 };
