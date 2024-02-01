@@ -658,7 +658,7 @@ function _Chat() {
           }
         // 确保结果数组有四个元素，不足部分填充为空字符串
           while(parts.length < 4) {
-              parts.push("");
+              parts.push("empty");
           }
       
           return parts.slice(0, 4); // 只返回前四个部分
