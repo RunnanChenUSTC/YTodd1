@@ -156,18 +156,6 @@ function PromptToast(props: {
   const context = session.mask.context;
   return (
     <div className={styles["prompt-toast"]} key="prompt-toast">
-      {props.showToast && (
-        <div
-          className={styles["prompt-toast-inner"] + " clickable"}
-          role="button"
-          onClick={() => props.setShowModal(true)}
-        >
-          <BrainIcon />
-          <span className={styles["prompt-toast-content"]}>
-            {Locale.Context.Toast(context.length)}
-          </span>
-        </div>
-      )}
       {props.showModal && (
         <SessionConfigModel onClose={() => props.setShowModal(false)} />
       )}
