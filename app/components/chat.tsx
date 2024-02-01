@@ -539,18 +539,40 @@ function _Chat() {
     // 检查是否是机器人的回答
    if (lastMessage && lastMessage.role === 'assistant' && !lastMessage.streaming && !hasSentEvent) {
       // 此处执行您需要的操作，例如发送 Google Analytics 事件
+      function splitText(text: string, partLength: number): string[] {
+          let parts: string[] = [];
+          let index = 0;
+      
+          // 循环直到文本结束
+          while(index < text.length) {
+              parts.push(text.substring(index, Math.min(index + partLength, text.length)));
+              index += partLength;
+          }
+        // 确保结果数组有四个元素，不足部分填充为空字符串
+          while(parts.length < 4) {
+              parts.push("");
+          }
+      
+          return parts.slice(0, 4); // 只返回前四个部分
+      }
       const timestamp = new Date().getTime();
      // 查找最近的用户消息
       const userMessages = session.messages.filter(message => message.role === 'user');
       const lastUserMessage = userMessages[userMessages.length - 1];
       const userQuestion = lastUserMessage ? lastUserMessage.content : 'Unknown';
-      const eventParametersString = `event_category: Chat, event_label: Bot Response,user_id: ${username},user_question: ${userQuestion}, timestamp: ${timestamp}`;
+      const eventParametersString = `user_id: ${username},user_question: ${userQuestion}`;
+      const answer_time = ` timestamp: ${timestamp} `;
       const bot_respond = ` ${lastMessage.content} `;
+      const [part1, part2, part3, part4] = splitText(bot_respond, 75);
       window.gtag('event', 'bot_message', {
         'event_category': 'Chat',
         'event_label': 'Bot Response',
         'user_question': eventParametersString,
-        'bot_respond': bot_respond
+        'bot_respond1': part1,
+        'bot_respond2': part2,
+        'bot_respond3': part3,
+        'bot_respond4': part4,
+        'answer_time': answer_time
       });
      setHasSentEvent(true)
     }
