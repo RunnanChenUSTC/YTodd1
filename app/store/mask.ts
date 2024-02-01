@@ -37,7 +37,7 @@ export const createEmptyMask = () =>
         id: "scorates-0",
         role: "user",
         content:
-          "你对我的每一句回答必须在400字以内。同时，请时刻提醒我的输入不许超过400字",
+          "你对我的每一句回答必须在100字以内。同时，请时刻提醒我的输入不许超过100字",
         date: "",
       },
     ],
