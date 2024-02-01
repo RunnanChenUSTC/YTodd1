@@ -31,23 +31,13 @@ export const createEmptyMask = () =>
     id: nanoid(),
     avatar: DEFAULT_MASK_AVATAR,
     name: DEFAULT_TOPIC,
-    hideContext: true,
-    context: [
-      {
-        id: "scorates-0",
-        role: "user",
-        content:
-          "你对我的每一句回答必须在100字以内。同时，请时刻提醒我的输入不许超过100字",
-        date: "",
-      },
-    ],
+    context: [],
     syncGlobalConfig: true, // use global config as default
     modelConfig: { ...useAppConfig.getState().modelConfig },
     lang: getLang(),
     builtin: false,
     createdAt: Date.now(),
   }) as Mask;
-
 export const useMaskStore = createPersistStore(
   { ...DEFAULT_MASK_STATE },
 
