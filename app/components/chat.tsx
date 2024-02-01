@@ -666,7 +666,7 @@ function _Chat() {
   const user_name = `${userId}`;
   const time_shot = `${timestamp}`;
   const userrec = `${userAccess}`;
-  const [rec1, rec2, rec3, rec4] = splitText(record, 75);
+  const [rec1, rec2, rec3, rec4] = splitText1(record, 75);
   window.gtag('event', 'send_message', { 'time_shot':time_shot, 'user_name':user_name,'rec1':rec1,'rec2':rec2,'rec3':rec3,'rec4':rec4});
   window.gtag('event', 'user_access', {  'userrec': userrec });
   setHasSentEvent(false);
