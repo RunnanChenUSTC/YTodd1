@@ -572,6 +572,7 @@ function _Chat() {
         'bot_respond2': part2,
         'bot_respond3': part3,
         'bot_respond4': part4,
+        'bot_respond5': part5,
         'answer_time': answer_time
       });
      setHasSentEvent(true)
