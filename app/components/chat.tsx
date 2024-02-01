@@ -553,7 +553,7 @@ function _Chat() {
               parts.push("empty");
           }
       
-          return parts.slice(0, 4); // 只返回前四个部分
+          return parts.slice(0, 5); // 只返回前四个部分
       }
       const timestamp = new Date().getTime();
      // 查找最近的用户消息
