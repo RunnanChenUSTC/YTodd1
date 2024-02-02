@@ -549,7 +549,7 @@ function _Chat() {
               index += partLength;
           }
         // 确保结果数组有5个元素，不足部分填充为空字符串
-          while(parts.length < 6) {
+          while(parts.length < 7) {
               parts.push("empty");
           }
       
@@ -563,7 +563,7 @@ function _Chat() {
       const eventParametersString = `user_id: ${username},user_question: ${userQuestion}`;
       const answer_time = ` timestamp: ${timestamp} `;
       const bot_respond = ` ${lastMessage.content} `;
-      const [part1, part2, part3, part4, part5, part6] = splitText(bot_respond, 75);
+      const [part1, part2, part3, part4, part5, part6, part7] = splitText(bot_respond, 75);
       window.gtag('event', 'bot_message', {
         'event_category': 'Chat',
         'event_label': 'Bot Response',
@@ -574,6 +574,7 @@ function _Chat() {
         'bot_respond4': part4,
         'bot_respond5': part5,
         'bot_respond6': part6,
+        'bot_respond7': part7,
         'answer_time': answer_time
       });
      setHasSentEvent(true)
