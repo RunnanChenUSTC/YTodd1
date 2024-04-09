@@ -10,7 +10,7 @@ const en: LocaleType = {
   Error: {
     Unauthorized: isApp
       ? "Invalid API Key, please check it in [Settings](/#/settings) page."
-      : "Unauthorized access, please enter access code in [auth](/#/auth) page.",
+      : "You can start conversation now, if this message persists, return to eleven.smartpal.chat to re-enter your account info.",
   },
   Auth: {
     Title: "Need Access Code",
