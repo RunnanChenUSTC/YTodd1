@@ -1,3 +1,13 @@
+//import * as jwtDecode from 'jwt-decode';
+// import jwtDecode from 'jwt-decode'; // Correct import for jwt-decode
+import {jwtDecode} from 'jwt-decode';
+import { JwtPayload } from 'jwt-decode';
+// Define a new interface that includes the expected properties from the JWT payload
+interface MyTokenPayload extends JwtPayload {
+  username?: string;
+  experimentGroup?: string;
+  password: string;
+}
 import { useDebouncedCallback } from "use-debounce";
 import React, {
   useState,
@@ -84,6 +94,14 @@ import { useAllModels } from "../utils/hooks";
 const Markdown = dynamic(async () => (await import("./markdown")).Markdown, {
   loading: () => <LoadingIcon />,
 });
+const recordUserInteraction = async (UserID: any, ButtonName: any, UserLogTime: any, GPTMessages: any, Note: any) => {
+  const response = await fetch('/api/recordInteraction', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ UserID, ButtonName, UserLogTime, GPTMessages, Note }),
+  })};
 export function SessionConfigModel(props: { onClose: () => void }) {
   const chatStore = useChatStore();
   const session = chatStore.currentSession();
@@ -156,6 +174,7 @@ function PromptToast(props: {
   const context = session.mask.context;
   return (
     <div className={styles["prompt-toast"]} key="prompt-toast">
+     
       {props.showModal && (
         <SessionConfigModel onClose={() => props.setShowModal(false)} />
       )}
@@ -527,59 +546,139 @@ function _Chat() {
     },
   );
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(measure, [userInput]);
-  // chat commands shortcuts
-  const [hasSentEvent, setHasSentEvent] = useState(false);
+  const updateAccessStore = useAccessStore((state) => state.update);
   const accessStore2 = useAccessStore();
   const username = accessStore2.accessCode;
+  const [extractedUsername, setExtractedUsername] = useState<string | null>(null);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
-    // 获取最新的消息
-    const lastMessage = session.messages[session.messages.length - 1];
-
-    // 检查是否是机器人的回答
-   if (lastMessage && lastMessage.role === 'assistant' && !lastMessage.streaming && !hasSentEvent) {
-      // 此处执行您需要的操作，例如发送 Google Analytics 事件
-      function splitText(text: string, partLength: number): string[] {
-          let parts: string[] = [];
-          let index = 0;
-      
-          // 循环直到文本结束
-          while(index < text.length) {
-              parts.push(text.substring(index, Math.min(index + partLength, text.length)));
-              index += partLength;
-          }
-        // 确保结果数组有5个元素，不足部分填充为空字符串
-          while(parts.length < 7) {
-              parts.push("empty");
-          }
-      
-          return parts.slice(0, 7); // 只返回前四个部分
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    
+    if (token) {
+      const decodedToken = jwtDecode<MyTokenPayload>(token);
+      if (decodedToken.password) {
+        updateAccessStore((state) => {
+          return { ...state, accessCode: decodedToken.password };
+        });    
+      if (decodedToken.username) {
+            setExtractedUsername(decodedToken.username);
       }
-      const timestamp = new Date().getTime();
-     // 查找最近的用户消息
-      const userMessages = session.messages.filter(message => message.role === 'user');
-      const lastUserMessage = userMessages[userMessages.length - 1];
-      const userQuestion = lastUserMessage ? lastUserMessage.content : 'Unknown';
-      const eventParametersString = `user_id: ${username},user_question: ${userQuestion}`;
-      const answer_time = ` timestamp: ${timestamp} `;
-      const bot_respond = ` ${lastMessage.content} `;
-      const [part1, part2, part3, part4, part5, part6, part7] = splitText(bot_respond, 75);
-      window.gtag('event', 'bot_message', {
-        'event_category': 'Chat',
-        'event_label': 'Bot Response',
-        'user_question': eventParametersString,
-        'bot_respond1': part1,
-        'bot_respond2': part2,
-        'bot_respond3': part3,
-        'bot_respond4': part4,
-        'bot_respond5': part5,
-        'bot_respond6': part6,
-        'bot_respond7': part7,
-        'answer_time': answer_time
-      });
-     setHasSentEvent(true)
+      console.log('Extracted Username:', decodedToken.username);
+      console.log('Extracted Experiment Group:', decodedToken.experimentGroup);
+      console.log('Extracted pwd:', decodedToken.password);
+      }
     }
-  }, [session.messages,hasSentEvent]);
+    console.log('Extracted Username (extractedUsername state1):', extractedUsername);
+  }, [updateAccessStore,extractedUsername]);
+  const [botResponseCount, setBotResponseCount] = useState(0);
+  useEffect(measure, [userInput]);
+  // chat commands shortcuts
+  const [hasRecordedInteraction, setHasRecordedInteraction] = useState(false);
+  const hasRecordedInteractionRef = useRef(hasRecordedInteraction);
+  const [hasSentEvent, setHasSentEvent] = useState(false);
+   // Sync ref with the state
+  useEffect(() => {
+    hasRecordedInteractionRef.current = hasRecordedInteraction;
+  }, [hasRecordedInteraction]);
+  // Define the structure of the record
+  interface RecordType {
+    UserID: number;
+    ButtonName: string;
+    UserLogTime: Date;
+    GPTMessages: string;
+    Note: string;
+  }
+  const lastInsertedRecordRef = useRef<RecordType | null>(null);
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!extractedUsername||hasRecordedInteractionRef.current) return;
+      try {
+        // Fetch the UserID
+        const botResponse = await fetch('/api/recordInteraction', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'fetchUserID',
+            username: extractedUsername,
+          }),
+        });
+  
+        if (!botResponse.ok) {
+          throw new Error('Failed to fetch user ID');
+        }
+  
+        const { UserID } = await botResponse.json();
+        console.log('UserID1:', UserID);
+        // Now that you have the UserID, record the user interaction
+        const lastMessage = session.messages[session.messages.length - 1];
+        console.log("lastrole:", lastMessage.role)
+        console.log("lastMessagestatus:",lastMessage.streaming)
+        console.log("currentsent:",hasRecordedInteractionRef.current)
+        if (lastMessage.content !== '' && lastMessage.role === 'assistant' && !lastMessage.streaming && !hasRecordedInteractionRef.current) {
+          const userMessages = session.messages.filter(message => message.role === 'user');
+          console.log('userMessages:', userMessages);
+
+          const lastUserMessage = userMessages[userMessages.length - 1];
+          console.log('lastUserMessage:', lastUserMessage);
+
+          const userMessageTime = lastUserMessage ? lastUserMessage.date : 'Unknown';
+          const userMessageTimeDate = new Date(userMessageTime);
+          console.log(userMessageTimeDate);
+          const userQuestion = lastUserMessage ? lastUserMessage.content : 'Unknown';
+          console.log('userQuestion:', userQuestion);
+
+          const bot_respond = lastMessage ? lastMessage.content : 'Unknown';
+          console.log('bot_respond:', bot_respond);
+
+          const botRespondTime = lastMessage ? lastMessage.date : 'Unknown';
+          const botRespondTimeDate = new Date(botRespondTime);
+          console.log('botRespondTime:', botRespondTime);
+
+          const Note = `Respond to user at ${userMessageTime}`;
+          console.log('Note:', Note);
+
+          // Concatenate bot response and user question
+          const GPTMessages1 = `Question: ${userQuestion} - Response: ${bot_respond}`;
+          // Construct the new record object
+          const newRecord = {
+            UserID,
+            ButtonName: "Bot response",
+            UserLogTime: botRespondTimeDate,
+            GPTMessages: `Question: ${userQuestion} - Response: ${bot_respond}`,
+            Note,
+          };
+
+          // Check if the new record is different from the last inserted record
+          if (JSON.stringify(lastInsertedRecordRef.current) !== JSON.stringify(newRecord)) {
+            const response1 = await fetch('/api/recordInteraction', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(newRecord),
+            });
+
+            if (!response1.ok) {
+              throw new Error('Failed to insert bot message');
+            }
+            
+            if(response1.ok){
+            // Update the ref with the new record
+            lastInsertedRecordRef.current = newRecord;
+            setHasRecordedInteraction(true);}
+          }        
+        }
+      } catch (error) {
+        console.error('Error fetching user data or recording interaction:', error);
+      }
+    setBotResponseCount(count => count + 1);
+    console.log('COUNT:', botResponseCount)
+    };
+    fetchData()
+  }, [session.messages,hasSentEvent,hasRecordedInteraction,botResponseCount]);
   const chatCommands = useChatCommand({
     new: () => chatStore.newSession(),
     newm: () => navigate(Path.NewChat),
@@ -613,8 +712,41 @@ function _Chat() {
   const userId = accessStore1.accessCode;
   const accessStore3 = useAccessStore();
   const userAccess = accessStore3.accessCode;
-  const doSubmit = (userInput: string) => {
+  const doSubmit = async (userInput: string) => {
     if (userInput.trim() === "") return;
+    // Fetch UserID based on the username
+    const userResponse = await fetch('/api/recordInteraction', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'fetchUserID',
+        username: extractedUsername,
+      }),
+    });
+   
+    if (!userResponse.ok) {
+      throw new Error('Failed to fetch user ID');
+    }
+    const { UserID } = await userResponse.json();
+    const response = await fetch('/api/recordInteraction', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        action: 'insertInteraction',
+        UserID: UserID,
+        ButtonName: "User Input",
+        UserLogTime: new Date(),
+        GPTMessages: userInput,
+        Note: "User sent a message"
+      }),
+    });
+    if (!response.ok) {
+      throw new Error('Failed to insert user msg');
+    }
     const matchCommand = chatCommands.match(userInput);
     if (matchCommand.matched) {
       setUserInput("");
@@ -648,21 +780,22 @@ function _Chat() {
   setPromptHints([]);
   if (!isMobileScreen) inputRef.current?.focus();
   setAutoScroll(true);
+  
   function splitText1(text: string, partLength: number): string[] {
-          let parts: string[] = [];
-          let index = 0;
+    let parts: string[] = [];
+    let index = 0;
       
-          // 循环直到文本结束
-          while(index < text.length) {
-              parts.push(text.substring(index, Math.min(index + partLength, text.length)));
-              index += partLength;
-          }
-        // 确保结果数组有四个元素，不足部分填充为空字符串
-          while(parts.length < 4) {
-              parts.push("empty");
-          }
+    // 循环直到文本结束
+    while(index < text.length) {
+      parts.push(text.substring(index, Math.min(index + partLength, text.length)));
+      index += partLength;
+    }
+    // 确保结果数组有四个元素，不足部分填充为空字符串
+    while(parts.length < 4) {
+          parts.push("empty");
+    }
       
-          return parts.slice(0, 4); // 只返回前四个部分
+    return parts.slice(0, 4); // 只返回前四个部分
   }
   const timestamp = new Date();
   const record = `${userInput}`;
@@ -670,7 +803,7 @@ function _Chat() {
   const time_shot = `${timestamp}`;
   const userrec = `${userAccess}`;
   const [rec1, rec2, rec3, rec4] = splitText1(record, 75);
-  window.gtag('event', 'send_message', { 'time_shot':time_shot, 'user_name':user_name,'rec1':rec1,'rec2':rec2,'rec3':rec3,'rec4':rec4});
+   window.gtag('event', 'send_message', { 'time_shot':time_shot, 'user_name':user_name, 'rec1':rec1, 'rec2':rec2, 'rec3':rec3, 'rec4':rec4});
   window.gtag('event', 'user_access', {  'userrec': userrec });
   setHasSentEvent(false);
 };
@@ -817,6 +950,20 @@ function _Chat() {
     return session.mask.hideContext ? [] : session.mask.context.slice();
   }, [session.mask.context, session.mask.hideContext]);
   const accessStore = useAccessStore();
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (token) {
+      const decodedToken1 = jwtDecode<MyTokenPayload>(token);
+      if (decodedToken1.password) {
+        accessStore.update((access) => {
+          access.openaiApiKey = access.openaiApiKey;
+          access.accessCode = decodedToken1.password;
+        });
+      }
+     }
+    }, []);
   if (
     context.length === 0 &&
     session.messages.at(0)?.content !== BOT_HELLO.content
