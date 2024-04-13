@@ -577,108 +577,71 @@ function _Chat() {
   const [hasRecordedInteraction, setHasRecordedInteraction] = useState(false);
   const hasRecordedInteractionRef = useRef(hasRecordedInteraction);
   const [hasSentEvent, setHasSentEvent] = useState(false);
-   // Sync ref with the state
   useEffect(() => {
-    hasRecordedInteractionRef.current = hasRecordedInteraction;
-  }, [hasRecordedInteraction]);
-  // Define the structure of the record
-  interface RecordType {
-    UserID: number;
-    ButtonName: string;
-    UserLogTime: Date;
-    GPTMessages: string;
-    Note: string;
-  }
-  const lastInsertedRecordRef = useRef<RecordType | null>(null);
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!extractedUsername||hasRecordedInteractionRef.current) return;
-      try {
-        // Fetch the UserID
-        const botResponse = await fetch('/api/recordInteraction', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            action: 'fetchUserID',
-            username: extractedUsername,
-          }),
-        });
-  
-        if (!botResponse.ok) {
-          throw new Error('Failed to fetch user ID');
-        }
-  
-        const { UserID } = await botResponse.json();
-        console.log('UserID1:', UserID);
-        // Now that you have the UserID, record the user interaction
-        const lastMessage = session.messages[session.messages.length - 1];
-        console.log("lastrole:", lastMessage.role)
-        console.log("lastMessagestatus:",lastMessage.streaming)
-        console.log("currentsent:",hasRecordedInteractionRef.current)
-        if (lastMessage.content !== '' && lastMessage.role === 'assistant' && !lastMessage.streaming && !hasRecordedInteractionRef.current) {
-          const userMessages = session.messages.filter(message => message.role === 'user');
-          console.log('userMessages:', userMessages);
+  const lastMessage = session.messages[session.messages.length - 1];
 
-          const lastUserMessage = userMessages[userMessages.length - 1];
-          console.log('lastUserMessage:', lastUserMessage);
+  if (lastMessage && lastMessage.role === 'assistant' && extractedUsername && !lastMessage.streaming && !hasSentEvent && lastMessage.content.trim() !== '') {
+    // 获取用户的最后一个问题
+    const userMessages = session.messages.filter(message => message.role === 'user');
+    const lastUserMessage = userMessages[userMessages.length - 1];
+    const userQuestion = lastUserMessage ? lastUserMessage.content : 'Unknown';
+    const userMessageTime = lastUserMessage ? lastUserMessage.date : 'Unknown';
 
-          const userMessageTime = lastUserMessage ? lastUserMessage.date : 'Unknown';
-          const userMessageTimeDate = new Date(userMessageTime);
-          console.log(userMessageTimeDate);
-          const userQuestion = lastUserMessage ? lastUserMessage.content : 'Unknown';
-          console.log('userQuestion:', userQuestion);
+    // 第一步：获取UserID
+    const fetchUserID = async () => {
+      const response = await fetch('/api/recordInteraction', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'fetchUserID',
+          username: extractedUsername,
+        }),
+      });
 
-          const bot_respond = lastMessage ? lastMessage.content : 'Unknown';
-          console.log('bot_respond:', bot_respond);
-
-          const botRespondTime = lastMessage ? lastMessage.date : 'Unknown';
-          const botRespondTimeDate = new Date(botRespondTime);
-          console.log('botRespondTime:', botRespondTime);
-
-          const Note = `Respond to user at ${userMessageTime}`;
-          console.log('Note:', Note);
-
-          // Concatenate bot response and user question
-          const GPTMessages1 = `Question: ${userQuestion} - Response: ${bot_respond}`;
-          // Construct the new record object
-          const newRecord = {
-            UserID,
-            ButtonName: "Bot response",
-            UserLogTime: botRespondTimeDate,
-            GPTMessages: `Question: ${userQuestion} - Response: ${bot_respond}`,
-            Note,
-          };
-
-          // Check if the new record is different from the last inserted record
-          if (JSON.stringify(lastInsertedRecordRef.current) !== JSON.stringify(newRecord)) {
-            const response1 = await fetch('/api/recordInteraction', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify(newRecord),
-            });
-
-            if (!response1.ok) {
-              throw new Error('Failed to insert bot message');
-            }
-            
-            if(response1.ok){
-            // Update the ref with the new record
-            lastInsertedRecordRef.current = newRecord;
-            setHasRecordedInteraction(true);}
-          }        
-        }
-      } catch (error) {
-        console.error('Error fetching user data or recording interaction:', error);
+      if (!response.ok) {
+        throw new Error('Failed to fetch UserID');
       }
-    setBotResponseCount(count => count + 1);
-    console.log('COUNT:', botResponseCount)
+
+      return response.json();
     };
-    fetchData()
-  }, [session.messages,hasSentEvent,hasRecordedInteraction,botResponseCount]);
+
+    // 第二步：使用获取到的UserID发送交互数据
+    fetchUserID().then(data => {
+      const { UserID } = data;
+      const dataToSend = {
+        action: 'insertInteraction',
+        UserID: UserID,
+        ButtonName: "Bot Response",
+        UserLogTime: new Date().toISOString(),
+        GPTMessages: `Question: ${userQuestion}, Response: ${lastMessage.content}`,
+        Note: `Respond to user at ${userMessageTime}`,
+      };
+
+      return fetch('/api/recordInteraction', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSend),
+      });
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Failed to record interaction');
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log('Interaction recorded:', data);
+      setHasSentEvent(true);
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+  }
+}, [session.messages, extractedUsername, hasSentEvent]);
   const chatCommands = useChatCommand({
     new: () => chatStore.newSession(),
     newm: () => navigate(Path.NewChat),
