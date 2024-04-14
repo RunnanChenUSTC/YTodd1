@@ -616,7 +616,7 @@ function _Chat() {
         ButtonName: "Bot Response",
         UserLogTime: new Date().toISOString(),
         GPTMessages: `Question: ${userQuestion}, Response: ${lastMessage.content}`,
-        Note: `Respond to user at ${userMessageTime}`,
+        Note: `Respond to user at ${new Date().toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}`,
       };
 
       return fetch('/api/recordInteraction', {
@@ -704,7 +704,7 @@ function _Chat() {
         ButtonName: "User Input",
         UserLogTime: new Date(),
         GPTMessages: userInput,
-        Note: "User sent a message"
+        Note: `user sent a message at ${new Date().toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}`
       }),
     });
     if (!response.ok) {
