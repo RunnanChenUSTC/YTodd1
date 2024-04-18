@@ -1065,12 +1065,7 @@ function _Chat() {
         {isMobileScreen && (
           <div className="window-actions">
             <div className={"window-action-button"}>
-              <IconButton
-                icon={<ReturnIcon />}
-                bordered
-                title={Locale.Chat.Actions.ChatList}
-                onClick={() => navigate(Path.Home)}
-              />
+               {/* No actions here */}
             </div>
           </div>
         )}
