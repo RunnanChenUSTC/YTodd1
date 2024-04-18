@@ -418,27 +418,7 @@ export function ChatActions(props: {
   }, [chatStore, currentModel, models]);
   return (
     <div className={styles["chat-input-actions"]}>
-      {couldStop && (
-        <ChatAction
-          onClick={stopAll}
-          text={Locale.Chat.InputActions.Stop}
-          icon={<StopIcon />}
-        />
-      )}
-      {!props.hitBottom && (
-        <ChatAction
-          onClick={props.scrollToBottom}
-          text={Locale.Chat.InputActions.ToBottom}
-          icon={<BottomIcon />}
-        />
-      )}
-      {props.hitBottom && (
-        <ChatAction
-          onClick={props.showPromptModal}
-          text={Locale.Chat.InputActions.ToBottom}
-          icon={<BottomIcon />}
-        />
-      )}
+      {/* No actions here */}
     </div>
   );
 }
