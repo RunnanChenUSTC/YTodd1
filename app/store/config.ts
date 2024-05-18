@@ -8,6 +8,7 @@ import {
   StoreKey,
 } from "../constant";
 import { createPersistStore } from "../utils/store";
+import { NARROW_SIDEBAR_WIDTH } from '../constant';
 
 export type ModelType = (typeof DEFAULT_MODELS)[number]["name"];
 
@@ -35,7 +36,7 @@ export const DEFAULT_CONFIG = {
   tightBorder: !!getClientConfig()?.isApp,
   sendPreviewBubble: true,
   enableAutoGenerateTitle: true,
-  sidebarWidth: DEFAULT_SIDEBAR_WIDTH,
+  sidebarWidth: NARROW_SIDEBAR_WIDTH,
 
   disablePromptHint: false,
 
