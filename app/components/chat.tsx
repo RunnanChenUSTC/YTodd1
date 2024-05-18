@@ -610,7 +610,17 @@ function _Chat() {
     // 第二步：使用获取到的UserID发送交互数据
     fetchUserID().then(data => {
       const { UserID } = data;
-      const dataToSend = {
+      const params2 = new URLSearchParams(window.location.search);
+      const questionid2 = params2.get("QuestionID");
+      const dataToSend: {
+        action: string;
+        UserID: any; // 考虑使用具体的类型而不是 any
+        ButtonName: string;
+        UserLogTime: string;
+        GPTMessages: string;
+        Note: string;
+        QuestionID?: number; // 可选的 QuestionID
+    } ={
         action: 'insertInteraction',
         UserID: UserID,
         ButtonName: "Bot Response",
@@ -618,6 +628,9 @@ function _Chat() {
         GPTMessages: `Question: ${userQuestion}, Response: ${lastMessage.content}`,
         Note: `Respond to user at ${new Date().toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}`,
       };
+      if (questionid2) {
+        dataToSend['QuestionID'] = parseInt(questionid2,10);
+      }
       const interactionKey = `${dataToSend.UserID}-${dataToSend.GPTMessages}`;
       const recordedInteractions = JSON.parse(localStorage.getItem('recordedInteractions') || '[]');
       if (!recordedInteractions.includes(interactionKey)) {
@@ -696,6 +709,8 @@ function _Chat() {
       throw new Error('Failed to fetch user ID');
     }
     const { UserID } = await userResponse.json();
+    const params1 = new URLSearchParams(window.location.search);
+    const questionid1 = params1.get("QuestionID");
     const interactionData: {
       action: string;
       UserID: any; // 考虑使用具体的类型而不是 any
@@ -712,8 +727,8 @@ function _Chat() {
       GPTMessages: userInput,
       Note: `user sent a message at ${new Date().toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}`
     }
-    if (questionId) {
-      interactionData['QuestionID'] = questionId;
+    if (questionid1) {
+      interactionData['QuestionID'] = parseInt(questionid1,10);
     }
     const response = await fetch('/api/recordInteraction', {
       method: 'POST',
@@ -844,7 +859,7 @@ useEffect(() => {
         // Check if this is the second non-null questionID
         if (newQuestionIDs.size >= 2) {
           chatStore.updateCurrentSession(session => {
-            session.mask.context = [];
+            // session.mask.context = [];
             session.messages = [];
             console.log("All messages have been cleared due to new QuestionID.");
           });
