@@ -91,6 +91,7 @@ import { prettyObject } from "../utils/format";
 import { ExportMessageModal } from "./exporter";
 import { getClientConfig } from "../config/client";
 import { useAllModels } from "../utils/hooks";
+// import useQuestionIDStore from "../store/access";
 const Markdown = dynamic(async () => (await import("./markdown")).Markdown, {
   loading: () => <LoadingIcon />,
 });
@@ -102,6 +103,7 @@ const recordUserInteraction = async (UserID: any, ButtonName: any, UserLogTime: 
     },
     body: JSON.stringify({ UserID, ButtonName, UserLogTime, GPTMessages, Note }),
   })};
+
 export function SessionConfigModel(props: { onClose: () => void }) {
   const chatStore = useChatStore();
   const session = chatStore.currentSession();
@@ -491,14 +493,21 @@ function _Chat() {
   const [showExport, setShowExport] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [userInput, setUserInput] = useState("");
+  const [autoSubmitted, setAutoSubmitted] = useState(false);
+  // Effect to extract query from URL and submit automatically
   const [isLoading, setIsLoading] = useState(false);
   const { submitKey, shouldSubmit } = useSubmitHandler();
   const { scrollRef, setAutoScroll, scrollDomToBottom } = useScrollToBottom();
   const [hitBottom, setHitBottom] = useState(true);
+  // const { addQuestionID, hasQuestionID, questionIDs } = useQuestionIDStore();
   const isMobileScreen = useMobileScreen();
   const navigate = useNavigate();
   // prompt hints
   const promptStore = usePromptStore();
+
+  useEffect(() => {
+    console.log("Session messages:", session.messages);
+  }, [session.messages]);
   const [promptHints, setPromptHints] = useState<RenderPompt[]>([]);
   const onSearch = useDebouncedCallback(
     (text: string) => {
@@ -510,6 +519,15 @@ function _Chat() {
   );
   // auto grow input
   const [inputRows, setInputRows] = useState(2);
+  const [questionIDs, setQuestionIDs] = useState(new Set());
+
+  // 在组件加载时从localStorage中读取QuestionIDs
+  useEffect(() => {
+    const storedIDs = localStorage.getItem('questionIDs');
+    if (storedIDs) {
+      setQuestionIDs(new Set(JSON.parse(storedIDs)));
+    }
+  }, []);
   const measure = useDebouncedCallback(
     () => {
       const rows = inputRef.current ? autoGrowTextArea(inputRef.current) : 1;
@@ -556,16 +574,18 @@ function _Chat() {
   // chat commands shortcuts
   const [hasRecordedInteraction, setHasRecordedInteraction] = useState(false);
   const hasRecordedInteractionRef = useRef(hasRecordedInteraction);
-  const [hasSentEvent, setHasSentEvent] = useState(false);
+  // const [hasSentEvent, setHasSentEvent] = useState(false);
+  const hasSentEventRef = useRef(false);
   useEffect(() => {
   const lastMessage = session.messages[session.messages.length - 1];
 
-  if (lastMessage && lastMessage.role === 'assistant' && extractedUsername && !lastMessage.streaming && !hasSentEvent && lastMessage.content.trim() !== '') {
+  if (lastMessage && lastMessage.role === 'assistant' && extractedUsername && !lastMessage.streaming && lastMessage.content.trim() !== '') {
     // 获取用户的最后一个问题
+    hasSentEventRef.current = true;
     const userMessages = session.messages.filter(message => message.role === 'user');
     const lastUserMessage = userMessages[userMessages.length - 1];
     const userQuestion = lastUserMessage ? lastUserMessage.content : 'Unknown';
-    const userMessageTime = lastUserMessage ? lastUserMessage.date : 'Unknown';
+    const userMessageTime = lastUserMessage ? lastUserMessage.date: 'Unknown';
 
     // 第一步：获取UserID
     const fetchUserID = async () => {
@@ -598,30 +618,33 @@ function _Chat() {
         GPTMessages: `Question: ${userQuestion}, Response: ${lastMessage.content}`,
         Note: `Respond to user at ${new Date().toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}`,
       };
-
-      return fetch('/api/recordInteraction', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dataToSend),
-      });
-    })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error('Failed to record interaction');
+      const interactionKey = `${dataToSend.UserID}-${dataToSend.GPTMessages}`;
+      const recordedInteractions = JSON.parse(localStorage.getItem('recordedInteractions') || '[]');
+      if (!recordedInteractions.includes(interactionKey)) {
+        fetch('/api/recordInteraction', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(dataToSend),
+        })
+        .then(response => {
+          if (response.ok) {
+            // Add to local storage to avoid future duplicates
+            recordedInteractions.push(interactionKey);
+            localStorage.setItem('recordedInteractions', JSON.stringify(recordedInteractions));
+            console.log('Interaction recorded:', dataToSend);
+          } else {
+            throw new Error('Failed to record interaction');
+          }
+          // hasSentEventRef.current = false;
+        })
+        .catch(error => console.error('Error:', error));
+      } else {
+        console.log('Duplicate interaction, not recording again');
       }
-      return response.json();
-    })
-    .then(data => {
-      console.log('Interaction recorded:', data);
-      setHasSentEvent(true);
-    })
-    .catch(error => {
-      console.error('Error:', error);
-    });
-  }
-}, [session.messages, extractedUsername, hasSentEvent]);
+    });}
+}, [session.messages,extractedUsername]);
   const chatCommands = useChatCommand({
     new: () => chatStore.newSession(),
     newm: () => navigate(Path.NewChat),
@@ -655,7 +678,7 @@ function _Chat() {
   const userId = accessStore1.accessCode;
   const accessStore3 = useAccessStore();
   const userAccess = accessStore3.accessCode;
-  const doSubmit = async (userInput: string) => {
+  const doSubmit = async (userInput: string, questionId?: number) => {
     if (userInput.trim() === "") return;
     // Fetch UserID based on the username
     const userResponse = await fetch('/api/recordInteraction', {
@@ -673,19 +696,31 @@ function _Chat() {
       throw new Error('Failed to fetch user ID');
     }
     const { UserID } = await userResponse.json();
+    const interactionData: {
+      action: string;
+      UserID: any; // 考虑使用具体的类型而不是 any
+      ButtonName: string;
+      UserLogTime: Date;
+      GPTMessages: string;
+      Note: string;
+      QuestionID?: number; // 可选的 QuestionID
+  } ={
+      action: 'insertInteraction',
+      UserID: UserID,
+      ButtonName: "User Input",
+      UserLogTime: new Date(),
+      GPTMessages: userInput,
+      Note: `user sent a message at ${new Date().toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}`
+    }
+    if (questionId) {
+      interactionData['QuestionID'] = questionId;
+    }
     const response = await fetch('/api/recordInteraction', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        action: 'insertInteraction',
-        UserID: UserID,
-        ButtonName: "User Input",
-        UserLogTime: new Date(),
-        GPTMessages: userInput,
-        Note: `user sent a message at ${new Date().toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}`
-      }),
+      body: JSON.stringify(interactionData),
     });
     if (!response.ok) {
       throw new Error('Failed to insert user msg');
@@ -748,10 +783,143 @@ function _Chat() {
   const [rec1, rec2, rec3, rec4] = splitText1(record, 75);
    window.gtag('event', 'send_message', { 'time_shot':time_shot, 'user_name':user_name, 'rec1':rec1, 'rec2':rec2, 'rec3':rec3, 'rec4':rec4});
   window.gtag('event', 'user_access', {  'userrec': userrec });
-  setHasSentEvent(false);
+  // setHasSentEvent(false);
 };
+  // 自动处理URL中的question参数
+const [questionContent, setQuestionContent] = useState('');
+// const [firstQuestionIDReceived, setFirstQuestionIDReceived] = useState(false);
+const fetchQuestion = async (questionId: string) => {
+  try {
+    const questionIdInt = parseInt(questionId, 10);  // 将字符串转换为整数
+    if (isNaN(questionIdInt)) {
+      console.error("Invalid QuestionID:", questionId);
+      return;
+    }
+    const response = await fetch('/api/fetchQuestion', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ action: 'fetchQuestion', questionId: questionIdInt })
+    });
 
+    if (!response.ok) {
+      throw new Error('Failed to fetch question');
+    }
 
+    const data = await response.json();
+    if (data.success) {
+      console.log("Fetched question content:", data.question.Content);
+      setQuestionContent(data.question.Content);  // 更新状态
+      return data.question.Content;
+    } else {
+      console.error('Failed to fetch question:', data.message);
+    }
+  } catch (error) {
+    console.error('Request failed:', error);
+  }
+};
+const [firstQuestionIDReceived, setFirstQuestionIDReceived] = useState(false); 
+const firstQuestionIDReceivedRef = useRef(false);
+// const [questionIDs, setQuestionIDs] = useState(new Set());
+const [firstQuestionID, setFirstQuestionID] = useState(null); // Store the very first QuestionID
+const [seenQuestionIDs, setSeenQuestionIDs] = useState(new Set()); // Set to track seen QuestionIDs
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const questionid = params.get("QuestionID");
+  console.log("Received question from URL:", questionid);
+  // if (questionid) {
+  //   fetchQuestion(questionid).then(content => {
+  //     // 可以在这里使用获取到的问题内容
+  //     console.log('Fetched Content:', content);
+  //   });
+  // }
+  if (questionid &&!questionIDs.has(questionid) && !autoSubmitted && extractedUsername) { 
+    const addQuestionID = (id:number) => {
+      if (id !== null && !questionIDs.has(id)) {
+        const newQuestionIDs = new Set(questionIDs.add(id));
+        setQuestionIDs(newQuestionIDs);
+        localStorage.setItem('questionIDs', JSON.stringify(Array.from(newQuestionIDs)));
+  
+        // Check if this is the second non-null questionID
+        if (newQuestionIDs.size >= 2) {
+          chatStore.updateCurrentSession(session => {
+            session.mask.context = [];
+            session.messages = [];
+            console.log("All messages have been cleared due to new QuestionID.");
+          });
+        }
+      }
+    };
+    // if (questionid&& questionid !== 'null') {
+    //   // const isNewQuestionID = !seenQuestionIDs.has(questionid);
+    //   if (!hasQuestionID(questionid)) {
+    //     // Add new QuestionID to the set
+    //     addQuestionID(questionid);
+    //     // setSeenQuestionIDs(new Set(seenQuestionIDs.add(questionid)));
+    //     if (questionIDs.size > 1) {
+    //       chatStore.updateCurrentSession(session => {
+    //         session.mask.context = [];
+    //         session.messages = [];
+    //         console.log("All messages have been cleared due to new QuestionID.");
+    //       });
+    //     }
+    //   }
+    // }
+      // if (seenQuestionIDs.size >= 1) {
+      //   // Clear messages if more than one unique QuestionID has been received
+      //   chatStore.updateCurrentSession(session => {
+      //     // Clear the context and possibly other session-specific data
+      //     session.mask.context = [];
+      //     session.messages = [];
+      //     console.log("Session context has been cleared.");
+      // });
+      // }}
+      fetchQuestion(questionid).then(Content => {
+        // 可以在这里使用获取到的问题内容
+        const questionIdInt = parseInt(questionid, 10);
+        addQuestionID(questionIdInt);
+        // console.log(firstQuestionIDReceived);
+      //   if (!firstQuestionIDReceivedRef.current) {
+      //   // firstQuestionIDReceivedRef.current = true; // 更新 ref
+      //   // setFirstQuestionIDReceived(true); // 设置为true，表明已接收到首个QuestionID
+      //   console.log("First time QuestionID received.");
+      // } else{
+      //   chatStore.updateCurrentSession(session => {
+      //     // 设置messages为空数组，从而删除所有消息
+      //     session.messages = [];
+      //     console.log("All messages have been deleted.");
+      //   });}
+        // chatStore.newSession();
+        // if (!firstQuestionIDReceived) {
+        //   setFirstQuestionIDReceived(true);
+        //   console.log("now is:",firstQuestionIDReceived);
+        // } else {
+        //   chatStore.deleteSession(chatStore.currentSessionIndex); 
+        // }
+        doSubmit(decodeURIComponent(Content),questionIdInt);
+        setAutoSubmitted(true);
+        console.log('Fetched Content:', Content);
+      });
+  }
+}, [autoSubmitted, extractedUsername])
+// useEffect(() => {
+//   const params = new URLSearchParams(window.location.search);
+//   const question = params.get("question");
+//   // const token = params.get('token');
+
+//   // if (token) {
+//   //   const decoded = jwtDecode(token);
+//   //   if (decoded && decoded.username) {
+//   //     setExtractedUsername(decoded.username);
+//   //   }
+//   // }
+
+//   if (question && !autoSubmitted) {
+//     doSubmit(decodeURIComponent(question));
+//     setAutoSubmitted(true);
+//   }
+// }, [autoSubmitted]);
   const onPromptSelect = (prompt: RenderPompt) => {
     setTimeout(() => {
       setPromptHints([]);
@@ -1065,7 +1233,7 @@ function _Chat() {
         {isMobileScreen && (
           <div className="window-actions">
             <div className={"window-action-button"}>
-               {/* No actions here */}
+              {/* No actions here */}
             </div>
           </div>
         )}
@@ -1083,7 +1251,7 @@ function _Chat() {
         <div className="window-actions">
          
           <div className="window-action-button">
-            {/* No actions here */}
+             {/* No actions here */}
           </div>
  
         </div>
