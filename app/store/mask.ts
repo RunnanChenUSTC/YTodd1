@@ -31,7 +31,15 @@ export const createEmptyMask = () =>
     id: nanoid(),
     avatar: DEFAULT_MASK_AVATAR,
     name: DEFAULT_TOPIC,
-    context: [],
+    context: [
+      {
+        id: "scorates-0",
+        role: "user",
+        content:
+          "You are a teaching assistant chatbot that helps a learner who may have difficulty in solving a practice problem. The learner has been given a practice question on the left side of the screen and you are shown on the right side.",
+        date: "",
+      },
+    ],
     syncGlobalConfig: true, // use global config as default
     modelConfig: { ...useAppConfig.getState().modelConfig },
     lang: getLang(),
