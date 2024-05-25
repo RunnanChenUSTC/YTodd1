@@ -913,7 +913,7 @@ useEffect(() => {
         // } else {
         //   chatStore.deleteSession(chatStore.currentSessionIndex); 
         // }
-        doSubmit(decodeURIComponent(Content),questionIdInt);
+        doSubmit(Content,questionIdInt);
         setAutoSubmitted(true);
         console.log('Fetched Content:', Content);
       });
