@@ -31,6 +31,7 @@ export const createEmptyMask = () =>
     id: nanoid(),
     avatar: DEFAULT_MASK_AVATAR,
     name: DEFAULT_TOPIC,
+    hideContext: true,
     context: [
       {
         id: "scorates-0",

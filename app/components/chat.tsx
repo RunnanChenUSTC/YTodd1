@@ -7,6 +7,7 @@ interface MyTokenPayload extends JwtPayload {
   username?: string;
   experimentGroup?: string;
   password: string;
+  gptAuth: string;
 }
 import { useDebouncedCallback } from "use-debounce";
 import React, {
@@ -1082,10 +1083,10 @@ useEffect(() => {
 
     if (token) {
       const decodedToken1 = jwtDecode<MyTokenPayload>(token);
-      if (decodedToken1.password) {
+      if (decodedToken1.gptAuth) {
         accessStore.update((access) => {
           access.openaiApiKey = access.openaiApiKey;
-          access.accessCode = decodedToken1.password;
+          access.accessCode = decodedToken1.gptAuth;
         });
       }
      }
