@@ -37,7 +37,8 @@ export const createEmptyMask = () =>
         id: "scorates-0",
         role: "user",
         content:
-          "You are a teaching assistant chatbot that helps a learner who may have difficulty in solving a practice problem. The learner has been given a practice question on the left side of the screen and you are shown on the right side.",
+          // "You are a teaching assistant chatbot that helps a learner who may have difficulty in solving a practice problem. The learner has been given a practice question on the left side of the screen and you are shown on the right side.",
+          "placeholder",
         date: "",
       },
     ],
