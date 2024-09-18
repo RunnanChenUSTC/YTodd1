@@ -1106,8 +1106,10 @@ useEffect(() => {
     const copiedHello = Object.assign({}, BOT_HELLO);
     if (!accessStore.isAuthorized()) {
       copiedHello.content = Locale.Error.Unauthorized;
+      context.push(copiedHello);
     }
-    context.push(copiedHello);
+
+    // context.push(copiedHello);
   }
   // preview messages
   const renderMessages = useMemo(() => {
