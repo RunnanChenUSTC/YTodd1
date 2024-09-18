@@ -1266,10 +1266,10 @@ useEffect(() => {
             className={`window-header-main-title ${styles["chat-body-main-title"]}`}
             // onClickCapture={() => setIsEditingMessage(true)}
           >
-            {!session.topic ? DEFAULT_TOPIC : session.topic}
+           {/* {!session.topic ? DEFAULT_TOPIC : session.topic} */}
           </div>
           <div className="window-header-sub-title">
-            {Locale.Chat.SubTitle(session.messages.length)}
+            {/* {Locale.Chat.SubTitle(session.messages.length)} */}
           </div>
         </div>
         <div className="window-actions">
