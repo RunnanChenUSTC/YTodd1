@@ -1101,16 +1101,22 @@ useEffect(() => {
     }, []);
   if (
     context.length === 0 &&
-    session.messages.at(0)?.content !== BOT_HELLO.content
+    session.messages.at(0)?.content == BOT_HELLO.content
   ) {
-    const copiedHello = Object.assign({}, BOT_HELLO);
+    // const copiedHello = Object.assign({}, BOT_HELLO);
+    // if (!accessStore.isAuthorized()) {
+    //   copiedHello.content = Locale.Error.Unauthorized;
+    //   context.push(copiedHello);
+    // }
+
+    // context.push(copiedHello);
+}else{
+  const copiedHello = Object.assign({}, BOT_HELLO);
     if (!accessStore.isAuthorized()) {
       copiedHello.content = Locale.Error.Unauthorized;
       context.push(copiedHello);
     }
-
-    // context.push(copiedHello);
-  }
+}
   // preview messages
   const renderMessages = useMemo(() => {
     return context
