@@ -1111,11 +1111,11 @@ useEffect(() => {
 
     // context.push(copiedHello);
 }else{
-  const copiedHello = Object.assign({}, BOT_HELLO);
-    if (!accessStore.isAuthorized()) {
-      copiedHello.content = Locale.Error.Unauthorized;
-      context.push(copiedHello);
-    }
+  // const copiedHello = Object.assign({}, BOT_HELLO);
+  //   if (!accessStore.isAuthorized()) {
+  //     copiedHello.content = Locale.Error.Unauthorized;
+  //     context.push(copiedHello);
+  //   }
 }
   // preview messages
   const renderMessages = useMemo(() => {
