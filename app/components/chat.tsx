@@ -694,7 +694,7 @@ function _Chat() {
   const userId = accessStore1.accessCode;
   const accessStore3 = useAccessStore();
   const userAccess = accessStore3.accessCode;
-  const doSubmit = async (userInput: string, questionId?: number) => {
+  const doSubmit = async (userInput: string, questionId?: number, autolabel?: string) => {
     if (userInput.trim() === "") return;
     // Fetch UserID based on the username
     const userResponse = await fetch('/api/recordInteraction', {
@@ -721,6 +721,7 @@ function _Chat() {
       UserLogTime: Date;
       GPTMessages: string;
       Note: string;
+      SpecialNote?: string; // New optional parameter
       QuestionID?: number; // 可选的 QuestionID
   } ={
       action: 'insertInteraction',
@@ -729,6 +730,9 @@ function _Chat() {
       UserLogTime: new Date(),
       GPTMessages: userInput,
       Note: `user sent a message at ${new Date().toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}`
+    }
+    if (autolabel) {
+      interactionData['SpecialNote'] = autolabel;
     }
     if (questionid1) {
       interactionData['QuestionID'] = parseInt(questionid1,10);
@@ -915,7 +919,7 @@ useEffect(() => {
         // } else {
         //   chatStore.deleteSession(chatStore.currentSessionIndex); 
         // }
-        doSubmit(Content,questionIdInt);
+        doSubmit(Content,questionIdInt,'autoSub');
         setAutoSubmitted(true);
         console.log('Fetched Content:', Content);
       });
