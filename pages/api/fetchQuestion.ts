@@ -39,6 +39,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
   } finally {
     // 确保释放连接
+    
     if (connection) connection.release();
   }
   } catch (error) {
