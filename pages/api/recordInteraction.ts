@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 //import jwt from 'jsonwebtoken';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import mysql2 from 'mysql2/promise';
+import mysql from 'mysql2/promise';
 import { RowDataPacket } from 'mysql2';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -11,7 +12,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
-
+  let connection: mysql.PoolConnection | undefined; // Explicitly define the connection type
   const connectionConfig = {
     host: 'mysqlserverless.cluster-cautknyafblq.us-east-1.rds.amazonaws.com',
     user: 'admin',
@@ -21,19 +22,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // const connection = await mysql2.createConnection(connectionConfig);
-    const connection = await pool.getConnection();
+    //const connection = await pool.getConnection();
     const { action, ...data } = req.body;
     try {
       if (action === 'insertInteraction') {
         const { UserID, ButtonName, UserLogTime, GPTMessages, Note, QuestionID, MsgIdentifier, SpecialNote} = data;
         const query = 'INSERT INTO user_log_UMN (UserID, ButtonName, UserLogTime, GPTMessages, Note, QuestionID, MsgIdentifier, SpecialNote) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
         const params = [UserID, ButtonName, UserLogTime, GPTMessages, Note, QuestionID || null, MsgIdentifier || null, SpecialNote || null];
-        const [result] = await connection.execute<mysql2.ResultSetHeader>(
+        const [result] = await pool.execute<mysql2.ResultSetHeader>(
           query, params
         );
         
         if (result.affectedRows > 0) {
-          const [rows] = await connection.execute<RowDataPacket[]>(
+          const [rows] = await pool.execute<RowDataPacket[]>(
             'SELECT LAST_INSERT_ID() AS UserLogID'
           );
 
@@ -49,7 +50,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         
       } else if (action === 'fetchUserID') {
         const { username } = data;
-        const [rows] = await connection.execute<RowDataPacket[]>(
+        const [rows] = await pool.execute<RowDataPacket[]>(
           'SELECT UserID FROM user_UMN WHERE UserName = ?', [username]
         );
 
@@ -67,7 +68,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           WHERE UserLogID = ?
         `;
         const params = [MsgIdentifier, UserLogID];
-        const [updateResult] = await connection.execute<mysql2.ResultSetHeader>(updateQuery, params);
+        const [updateResult] = await pool.execute<mysql2.ResultSetHeader>(updateQuery, params);
 
         if (updateResult.affectedRows > 0) {
           res.status(200).json({ success: true, message: 'MsgId updated successfully' });

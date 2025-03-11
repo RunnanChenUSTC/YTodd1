@@ -1,6 +1,7 @@
 import pool from '../../lib/db';
 import type { NextApiRequest, NextApiResponse } from 'next';
 import mysql2 from 'mysql2/promise';
+import mysql from 'mysql2/promise';
 import { RowDataPacket } from 'mysql2';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -8,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
-
+  let connection: mysql.PoolConnection | undefined; // Explicitly define the connection type
   const connectionConfig = {
     host: 'mysqlserverless.cluster-cautknyafblq.us-east-1.rds.amazonaws.com',
     user: 'admin',
@@ -18,12 +19,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     // const connection = await mysql2.createConnection(connectionConfig);
-    const connection = await pool.getConnection();
+    //const connection = await pool.getConnection();
     const { action, questionId } = req.body;
     try{
       // 处理基于questionId的查询
       if (action === 'fetchQuestion') {
-        const [rows] = await connection.execute<RowDataPacket[]>(
+        const [rows] = await pool.execute<RowDataPacket[]>(
           'SELECT Content FROM Question_UMN WHERE QuestionID = ?',
           [questionId]
         );
