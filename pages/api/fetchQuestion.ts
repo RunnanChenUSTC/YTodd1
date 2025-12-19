@@ -9,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
-  let connection: mysql.PoolConnection | undefined; // Explicitly define the connection type
+  let connection: mysql.PoolConnection | undefined;
   const connectionConfig = {
     host: 'mysqlserverless.cluster-cautknyafblq.us-east-1.rds.amazonaws.com',
     user: 'admin',
@@ -24,9 +24,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try{
       // 处理基于questionId的查询
       if (action === 'fetchQuestion') {
+        // 确保 questionId 是字符串类型
+        const questionIdStr = String(questionId);
         const [rows] = await pool.execute<RowDataPacket[]>(
-          'SELECT Content FROM Question_UMN WHERE QuestionID = ?',
-          [questionId]
+          'SELECT Content FROM Question_XM WHERE QuestionID = ?',
+          [questionIdStr]
         );
 
         if (rows.length > 0) {
@@ -39,7 +41,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
   } finally {
     // 确保释放连接
-    
     if (connection) connection.release();
   }
   } catch (error) {

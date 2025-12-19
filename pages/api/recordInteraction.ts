@@ -27,7 +27,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       if (action === 'insertInteraction') {
         const { UserID, ButtonName, UserLogTime, GPTMessages, Note, QuestionID, MsgIdentifier, SpecialNote} = data;
-        const query = 'INSERT INTO user_log_UMN (UserID, ButtonName, UserLogTime, GPTMessages, Note, QuestionID, MsgIdentifier, SpecialNote) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+        const query = 'INSERT INTO user_log_xm (UserID, ButtonName, UserLogTime, GPTMessages, Note, QuestionID, MsgIdentifier, SpecialNote) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
         const params = [UserID, ButtonName, UserLogTime, GPTMessages, Note, QuestionID || null, MsgIdentifier || null, SpecialNote || null];
         const [result] = await pool.execute<mysql2.ResultSetHeader>(
           query, params
@@ -51,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       } else if (action === 'fetchUserID') {
         const { username } = data;
         const [rows] = await pool.execute<RowDataPacket[]>(
-          'SELECT UserID FROM user_UMN WHERE UserName = ?', [username]
+          'SELECT UserID FROM user_xm WHERE UserName = ?', [username]
         );
 
         if (rows.length > 0) {
@@ -63,7 +63,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       } else if (action === 'updateMsgId') {
         const { UserLogID, MsgIdentifier } = data;
         const updateQuery = `
-          UPDATE user_log_UMN
+          UPDATE user_log_xm
           SET MsgIdentifier = ?
           WHERE UserLogID = ?
         `;
