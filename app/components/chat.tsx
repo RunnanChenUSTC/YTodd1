@@ -8,7 +8,7 @@ interface MyTokenPayload extends JwtPayload {
   experimentGroup?: string;
   password: string;
   gptAuth: string;
-  sysprompt: string;
+  sysprompt: string | number; // 存储的是 promptID，需要从数据库的 prompt_xm 表查询实际的提示词内容
 }
 import { useDebouncedCallback } from "use-debounce";
 import React, {
@@ -1096,12 +1096,39 @@ useEffect(() => {
         });
       }
       if (decodedToken1.sysprompt){
-        chatStore.updateCurrentSession(session => {
-          const updatedMask = { ...session.mask }; // Copy the current mask
-          updatedMask.context[0].content = decodedToken1.sysprompt; // Modify the context by adding a new item
-          session.mask = updatedMask; // Set the modified mask back to the session
-          console.log("now the context1 is", session.mask.context[0].content);
-      });}
+        // sysprompt 现在存储的是 promptID，需要从数据库获取实际内容
+        const fetchPrompt = async (promptID: string | number) => {
+          try {
+            const promptIDStr = String(promptID);
+            const response = await fetch('/api/fetchQuestion', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ action: 'fetchPrompt', promptID: promptIDStr })
+            });
+
+            const data = await response.json();
+            
+            if (data.success && data.prompt) {
+              // 获取到 prompt 内容后，设置到 context
+              chatStore.updateCurrentSession(session => {
+                const updatedMask = { ...session.mask }; // Copy the current mask
+                updatedMask.context[0].content = data.prompt; // 使用从数据库获取的提示词内容
+                session.mask = updatedMask; // Set the modified mask back to the session
+                console.log("now the context1 is", session.mask.context[0].content);
+              });
+            } else {
+              console.error("Failed to fetch prompt content for promptID:", promptID, data.message);
+            }
+          } catch (error) {
+            console.error("Error fetching prompt from database:", error);
+          }
+        };
+
+        // 调用函数获取 prompt 内容
+        fetchPrompt(decodedToken1.sysprompt);
+      }
      }
     }, []);
   if (

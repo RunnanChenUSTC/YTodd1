@@ -20,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     // const connection = await mysql2.createConnection(connectionConfig);
     //const connection = await pool.getConnection();
-    const { action, questionId } = req.body;
+    const { action, questionId, promptID } = req.body;
     try{
       // 处理基于questionId的查询
       if (action === 'fetchQuestion') {
@@ -35,6 +35,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           res.status(200).json({ success: true, question: rows[0] });
         } else {
           res.status(404).json({ success: false, message: 'Question not found' });
+        }
+      } else if (action === 'fetchPrompt') {
+        // 处理基于promptID的查询，从prompt_xm表获取提示词内容
+        // 确保 promptID 是字符串类型
+        const promptIDStr = String(promptID);
+        const [rows] = await pool.execute<RowDataPacket[]>(
+          'SELECT Prompts FROM prompt_xm WHERE PromptID = ?',
+          [promptIDStr]
+        );
+
+        if (rows.length > 0) {
+          res.status(200).json({ success: true, prompt: rows[0].Prompts });
+        } else {
+          res.status(404).json({ success: false, message: 'Prompt not found' });
         }
       } else {
         res.status(400).json({ message: 'Invalid action' });
