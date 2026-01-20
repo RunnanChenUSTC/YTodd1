@@ -812,8 +812,8 @@ const [questionContent, setQuestionContent] = useState('');
 // const [firstQuestionIDReceived, setFirstQuestionIDReceived] = useState(false);
 const fetchQuestion = async (questionId: string) => {
   try {
-    const questionIdInt = parseInt(questionId, 10);  // 将字符串转换为整数
-    if (isNaN(questionIdInt)) {
+    // questionId 保持为字符串类型，不转换为整数
+    if (!questionId || questionId.trim() === '') {
       console.error("Invalid QuestionID:", questionId);
       return;
     }
@@ -822,7 +822,7 @@ const fetchQuestion = async (questionId: string) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ action: 'fetchQuestion', questionId: questionIdInt })
+      body: JSON.stringify({ action: 'fetchQuestion', questionId: questionId })
     });
 
     if (!response.ok) {
